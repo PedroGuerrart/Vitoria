@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>O Conto de Vitória ✨</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Canvas Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <!-- Google Fonts: Medieval Theme -->
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800&family=Lora:ital,wght@0,400;0,600;1,400&family=Great+Vibes&display=swap" rel="stylesheet">
+    
+    <!-- Tone.js para gerar a música mágica diretamente no navegador -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        royal: {
+                            red: '#7f1d1d',
+                            gold: '#b48c36',
+                            dark: '#2c1e16',
+                            parchment: '#fdf6e3',
+                            cover: '#4a3018'
+                        }
+                    },
+                    fontFamily: {
+                        serif: ['Lora', 'serif'],
+                        title: ['Cinzel', 'serif'],
+                        signature: ['Great Vibes', 'cursive']
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            font-family: 'Lora', serif;
+            color: #2c1e16;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            transition: background 1s ease-in-out;
+        }
+
+        /* --- CENÁRIOS DINÂMICOS --- */
+        .bg-forest {
+            background-color: #0f291e;
+            background-image: url('https://www.transparenttextures.com/patterns/wood-pattern.png'), 
+                              linear-gradient(rgba(15, 41, 30, 0.7), rgba(5, 15, 10, 0.95));
+        }
+        .bg-castle {
+            background-color: #1e1b2e;
+            background-image: url('https://www.transparenttextures.com/patterns/dark-brick-wall.png'), 
+                              linear-gradient(rgba(30, 27, 46, 0.85), rgba(10, 10, 15, 0.95));
+        }
+        .bg-battle {
+            background-color: #3b0909;
+            background-image: url('https://www.transparenttextures.com/patterns/asfalt-dark.png'), 
+                              radial-gradient(circle at bottom, rgba(220, 38, 38, 0.3), rgba(59, 9, 9, 0.95));
+        }
+        .bg-celebration {
+            background-color: #362204;
+            background-image: url('https://www.transparenttextures.com/patterns/stardust.png'), 
+                              radial-gradient(circle at top, rgba(234, 179, 8, 0.4), rgba(20, 10, 0, 0.95));
+        }
+
+        /* O Livro */
+        .book-cover {
+            background-color: #4a3018;
+            background-image: url('https://www.transparenttextures.com/patterns/leather.png');
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.8), -10px 0 20px rgba(0,0,0,0.5), 0 20px 40px rgba(0,0,0,0.8);
+            border: 2px solid #2c1e16;
+            border-radius: 4px 16px 16px 4px;
+            position: relative;
+        }
+        .book-cover::before {
+            content: ''; position: absolute; left: 10px; top: 0; bottom: 0; width: 5px;
+            background: rgba(0,0,0,0.3); border-left: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .book-container {
+            background-color: #f3e5ab;
+            background-image: url('https://www.transparenttextures.com/patterns/aged-paper.png'), radial-gradient(circle, #fdf6e3 0%, #e0c896 80%, #c4a46a 100%);
+            box-shadow: inset 0 0 40px rgba(100, 70, 30, 0.4), inset 0 0 10px rgba(100, 70, 30, 0.2), 0 20px 40px rgba(0,0,0,0.8);
+            border: 4px solid #4a3018;
+            border-radius: 12px 16px 16px 12px;
+            position: relative;
+            perspective: 1500px;
+        }
+        .book-container::before {
+            content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 25px;
+            background: linear-gradient(to right, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.1) 40%, transparent 100%);
+            border-radius: 8px 0 0 8px; border-right: 1px solid rgba(100, 70, 30, 0.2);
+            z-index: 20;
+        }
+
+        /* Enfeites de Canto */
+        .corner-deco { position: absolute; width: 40px; height: 40px; border: 2px solid #b48c36; z-index: 10; pointer-events: none; }
+        .corner-tl { top: 10px; left: 30px; border-right: none; border-bottom: none; }
+        .corner-tr { top: 10px; right: 10px; border-left: none; border-bottom: none; }
+        .corner-bl { bottom: 10px; left: 30px; border-right: none; border-top: none; }
+        .corner-br { bottom: 10px; right: 10px; border-left: none; border-top: none; }
+
+        /* Animações */
+        .page-section {
+            transform-origin: left center;
+            transform-style: preserve-3d;
+            backface-visibility: hidden;
+            width: 100%; height: 100%;
+            position: absolute; top: 0; left: 0;
+        }
+        .fade-in { animation: fadeIn 0.6s ease-in forwards; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Imagens e Botões */
+        .story-img {
+            width: 100%; height: 100%; object-fit: cover;
+            border: 3px solid #4a3018; border-radius: 4px;
+            box-shadow: 0 6px 15px rgba(0,0,0,0.4);
+            margin: 10px 0; position: relative;
+        }
+        
+        .hint-glow {
+            position: absolute; width: 40px; height: 40px;
+            background: radial-gradient(circle, rgba(255,255,255,0.8) 0%, transparent 70%);
+            border-radius: 50%; animation: pulseGlow 2s infinite; pointer-events: none; z-index: 10;
+        }
+        @keyframes pulseGlow {
+            0% { transform: scale(0.8); opacity: 0.5; }
+            50% { transform: scale(1.2); opacity: 1; }
+            100% { transform: scale(0.8); opacity: 0.5; }
+        }
+
+        .btn-page {
+            background: transparent; color: #7f1d1d; border: 1px solid #7f1d1d;
+            font-family: 'Cinzel', serif; font-weight: bold; transition: all 0.2s;
+            position: absolute; bottom: 15px; left: 5%; width: 90%; z-index: 30;
+        }
+        .btn-page:active { background: #7f1d1d; color: #fdf6e3; }
+        
+        .btn-royal {
+            background: linear-gradient(to bottom, #991b1b, #7f1d1d);
+            border: 2px solid #b48c36; color: #fdf6e3; text-transform: uppercase;
+            font-family: 'Cinzel', serif; letter-spacing: 1px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.4), inset 0 2px 4px rgba(255,255,255,0.2);
+        }
+
+        /* Dragão e Arena */
+        .arena {
+            position: relative; width: 100%; height: 230px;
+            background-color: #1e1e1e; background-image: url('https://www.transparenttextures.com/patterns/diagmonds-light.png');
+            border: 4px solid #1a120c; border-radius: 8px; overflow: hidden;
+            box-shadow: inset 0 0 40px rgba(0,0,0,0.9);
+            touch-action: none; -webkit-tap-highlight-color: transparent;
+        }
+        .dragon-dynamic {
+            position: absolute; filter: drop-shadow(0 10px 15px rgba(0,0,0,0.5)); cursor: crosshair; transition: top 0.3s, left 0.3s;
+        }
+        .on-fire { animation: burn 0.5s infinite alternate; filter: drop-shadow(0 0 20px #ef4444) drop-shadow(0 0 40px #f97316); }
+        @keyframes burn {
+            from { filter: drop-shadow(0 0 10px #ef4444) drop-shadow(0 0 20px #f97316); transform: scale(1); }
+            to { filter: drop-shadow(0 0 25px #ef4444) drop-shadow(0 0 50px #eab308); transform: scale(1.02); }
+        }
+        .slash-effect {
+            position: absolute; font-size: 3rem; pointer-events: none;
+            animation: slashAnim 0.2s ease-out forwards; z-index: 50;
+            text-shadow: 0 0 10px rgba(255,255,255,0.8);
+        }
+        @keyframes slashAnim {
+            0% { opacity: 1; transform: scale(0.5) rotate(-45deg); }
+            100% { opacity: 0; transform: scale(1.5) rotate(45deg); }
+        }
+
+        /* Decreto Real */
+        .decree-card {
+            background-color: #fdf6e3; border: 2px solid #b48c36; padding: 20px;
+            text-align: center; box-shadow: inset 0 0 20px rgba(180, 140, 54, 0.2), 0 10px 20px rgba(0,0,0,0.5);
+            position: relative;
+        }
+        .decree-card::after {
+            content: '👑'; position: absolute; top: -15px; left: 50%; transform: translateX(-50%);
+            font-size: 24px; background: #fdf6e3; padding: 0 10px;
+        }
+    </style>
+</head>
+<body id="app-body" class="p-4 bg-forest">
+
+    <!-- PAGE 0: CLOSED BOOK COVER -->
+    <main id="book-cover" class="w-full max-w-sm h-[75vh] max-h-[700px] book-cover flex flex-col items-center justify-center p-8 text-center cursor-pointer fade-in" onclick="openBookAndStartAudio()">
+        <div class="border-4 border-royal-gold w-full h-full p-4 flex flex-col items-center justify-center relative">
+            <div class="absolute top-2 left-2 text-royal-gold text-2xl">⚜️</div>
+            <div class="absolute top-2 right-2 text-royal-gold text-2xl">⚜️</div>
+            <div class="absolute bottom-2 left-2 text-royal-gold text-2xl">⚜️</div>
+            <div class="absolute bottom-2 right-2 text-royal-gold text-2xl">⚜️</div>
+            
+            <h1 class="text-4xl font-extrabold font-title text-royal-gold mb-8 drop-shadow-md">
+                O Conto de<br>Vitória
+            </h1>
+            <div class="text-royal-gold text-6xl mb-8 drop-shadow-lg">🏰</div>
+            <p class="text-royal-parchment/80 font-serif italic text-sm mb-4">
+                (Ligue o som 🔊)
+            </p>
+            <p class="text-royal-parchment/80 font-serif italic text-sm font-bold animate-pulse">
+                Toque para abrir a lenda...
+            </p>
+        </div>
+    </main>
+
+    <!-- OPEN BOOK CONTENT -->
+    <main id="book-pages" class="hidden w-full max-w-md h-[88vh] max-h-[800px] book-container p-6 relative z-10 shadow-[0_0_60px_rgba(0,0,0,0.8)]">
+        
+        <div class="corner-deco corner-tl"></div>
+        <div class="corner-deco corner-tr"></div>
+        <div class="corner-deco corner-bl"></div>
+        <div class="corner-deco corner-br"></div>
+
+        <div class="ml-4 h-full relative" id="pages-wrapper">
+
+            <!-- PAGE 1: O Guerreiro -->
+            <section id="page-1" class="page-section hidden flex-col h-full text-center pt-2">
+                <h2 class="text-xl font-bold font-title text-royal-dark border-b border-royal-dark/30 pb-2 mb-2">Capítulo I</h2>
+                <div class="flex-1 overflow-y-auto space-y-3 px-1 relative pb-16">
+                    <div class="relative inline-block w-full">
+                        <img src="./img/eu cavalo.jpeg" onerror="this.onerror=null; this.src='https://placehold.co/600x400/4a3018/fdf6e3?text=1.+O+Guerreiro'" alt="Guerreiro" class="story-img cursor-pointer" onclick="triggerEasterEgg('rose')" />
+                        <div class="hint-glow" style="top: 30%; left: 45%;"></div>
+                    </div>
+                    <p class="text-md leading-relaxed text-justify first-letter:text-4xl first-letter:font-title first-letter:text-royal-red first-letter:float-left first-letter:mr-1">
+                        Era uma vez, um bravo guerreiro que cavalgava pelos campos. Ele carregava consigo uma rosa, símbolo de um coração que buscava um propósito. (Toque na rosa!)
+                    </p>
+                </div>
+                <button onclick="goToPage(2)" class="btn-page py-2 rounded">Virar Página ➔</button>
+            </section>
+
+            <!-- PAGE 2: A Donzela -->
+            <section id="page-2" class="page-section hidden flex-col h-full text-center pt-2">
+                <h2 class="text-xl font-bold font-title text-royal-dark border-b border-royal-dark/30 pb-2 mb-2">Capítulo II</h2>
+                <div class="flex-1 overflow-y-auto space-y-3 px-1 pb-16">
+                    <img src="./img/ela triste.jpeg" onerror="this.onerror=null; this.src='https://placehold.co/600x400/4a3018/fdf6e3?text=2.+A+Donzela+Triste'" alt="Donzela Triste" class="story-img" />
+                    <p class="text-md leading-relaxed text-justify">
+                        De longe, ele avistou uma imponente torre. Lá dentro, uma bela donzela chamada Vitória olhava tristemente pela janela. Ela estava aprisionada, sem poder ver as belezas do mundo.
+                    </p>
+                </div>
+                <button onclick="goToPage(3)" class="btn-page py-2 rounded">Virar Página ➔</button>
+            </section>
+
+            <!-- PAGE 3: O Perigo -->
+            <section id="page-3" class="page-section hidden flex-col h-full text-center pt-2">
+                <h2 class="text-xl font-bold font-title text-royal-dark border-b border-royal-dark/30 pb-2 mb-2">Capítulo III</h2>
+                <div class="flex-1 overflow-y-auto space-y-3 px-1 pb-16">
+                    <img src="./img/ela vnd o dragao.jpeg" onerror="this.onerror=null; this.src='https://placehold.co/600x400/4a3018/fdf6e3?text=3.+Dragão+no+Fundo'" alt="Dragão no fundo" class="story-img" />
+                    <p class="text-md leading-relaxed text-justify">
+                        O guerreiro queria se aproximar. Porém, o que ele não sabia, era que um perigo imenso e aterrorizante já rondava as muralhas bem atrás dela...
+                    </p>
+                </div>
+                
+                <button onclick="goToPage(4)" class="btn-page py-2 rounded">Virar Página ➔</button>
+            </section>
+
+            <!-- PAGE 4: A Chegada -->
+            <section id="page-4" class="page-section hidden flex-col h-full text-center pt-2">
+                <h2 class="text-xl font-bold font-title text-royal-dark border-b border-royal-dark/30 pb-2 mb-2">Capítulo IV</h2>
+                <div class="flex-1 overflow-y-auto space-y-3 px-1 pb-16 relative">
+                    <div class="relative inline-block w-full">
+                        <img src="./img/vnd o castelo.jpeg" onerror="this.onerror=null; this.src='https://placehold.co/600x400/4a3018/fdf6e3?text=4.+A+Chegada+na+Torre'" alt="Guerreiro e Torre" class="story-img cursor-pointer" onclick="triggerEasterEgg('horse')" />
+                    </div>
+                    <p class="text-md leading-relaxed text-justify">
+                        Decidido a arrancar um sorriso, ele cavalgou até a torre. Eles cruzaram olhares. Parecia o início de um lindo romance...
+                    </p>
+                </div>
+                <button onclick="goToPage(5)" class="btn-page py-2 rounded">Virar Página ➔</button>
+            </section>
+
+            <!-- PAGE 5: O Dragão -->
+            <section id="page-5" class="page-section hidden flex-col h-full text-center pt-2">
+                <h2 class="text-xl font-bold font-title text-royal-dark border-b border-royal-dark/30 pb-2 mb-2">Capítulo V</h2>
+                <div class="flex-1 overflow-y-auto space-y-3 px-1 pb-16">
+                    <img src="./img/dragao vendo.jpeg" onerror="this.onerror=null; this.src='https://placehold.co/600x400/4a3018/fdf6e3?text=5.+O+Dragão+Aparece'" alt="Dragão no céu" class="story-img" />
+                    <p class="text-md leading-relaxed text-justify font-bold text-royal-red">
+                        Até que os céus escureceram!
+                    </p>
+                    <p class="text-md leading-relaxed text-justify">
+                        Um rugido ecoou pelo vale. O guardião do castelo havia despertado e não estava nada feliz.
+                    </p>
+                </div>
+                <button onclick="goToPage(6)" class="btn-page py-2 rounded">Virar Página ➔</button>
+            </section>
+
+            <!-- PAGE 6: O Confronto -->
+            <section id="page-6" class="page-section hidden flex-col h-full text-center pt-2">
+                <h2 class="text-xl font-bold font-title text-royal-dark border-b border-royal-dark/30 pb-2 mb-2">Capítulo VI</h2>
+                <div class="flex-1 overflow-y-auto space-y-3 px-1 pb-16">
+                    <img src="./img/vai iniciar.jpeg" onerror="this.onerror=null; this.src='https://placehold.co/600x400/4a3018/fdf6e3?text=6.+O+Confronto'" alt="Guerreiro vs Dragão" class="story-img" />
+                    <p class="text-md leading-relaxed text-justify">
+                        A fera cuspiu fogo, mas o guerreiro permaneceu firme! Com a rosa em uma mão e a espada na outra, o embate era inevitável.
+                    </p>
+                </div>
+                <button onclick="goToPage(7)" class="btn-page py-2 rounded">Virar Página ➔</button>
+            </section>
+
+            <!-- PAGE 7: A Batalha (Início) -->
+            <section id="page-7" class="page-section hidden flex-col h-full text-center pt-2">
+                <h2 class="text-xl font-bold font-title text-royal-dark border-b border-royal-dark/30 pb-2 mb-2">Capítulo VII</h2>
+                <div class="flex-1 overflow-y-auto space-y-3 px-1 pb-16">
+                    <img src="./img/batalha.jpeg" onerror="this.onerror=null; this.src='https://placehold.co/600x400/4a3018/fdf6e3?text=7.+Batalha+Épica'" alt="Batalha Épica" class="story-img" />
+                    <p class="text-md leading-relaxed text-justify text-royal-red font-bold">
+                        O fogo consumia as ruínas. O herói precisa da sua ajuda mágica para desferir os golpes!
+                    </p>
+                    <button onclick="goToPage(8)" class="w-full btn-royal py-3 mt-4 rounded text-md font-bold shadow-lg animate-pulse">
+                        Ajudar na Batalha! ⚔️
+                    </button>
+                </div>
+            </section>
+
+            <!-- PAGE 8: DRAGON MINIGAME -->
+            <section id="page-8" class="page-section hidden flex-col items-center justify-center h-full text-center space-y-4">
+                <h2 class="text-2xl font-bold font-title text-royal-red">Ataque a Fera!</h2>
+                <p class="text-xs font-bold italic text-royal-dark">🔥 Dê 5 toques na arena para vencer! 🔥</p>
+                
+                <div class="w-full bg-gray-300 rounded-full h-4 border-2 border-royal-dark relative overflow-hidden mt-1 shadow-inner">
+                    <div id="hp-bar" class="bg-gradient-to-r from-red-600 to-red-400 h-full w-full transition-all duration-200"></div>
+                </div>
+                <p class="text-[12px] font-bold mt-1 uppercase tracking-widest text-royal-dark" id="hp-text">Vida do Dragão: 5/5</p>
+
+                <!-- Arena de Combate -->
+                <div id="arena" class="arena mt-2 cursor-pointer select-none" onclick="executeAttack(event)" ontouchstart="executeAttack(event)">
+                    <div id="dragon" class="text-5xl dragon-dynamic on-fire z-20 flex items-center justify-center p-4 select-none" style="top: 35%; left: 35%;">
+                        🐉
+                        <div class="flames absolute z-10 pointer-events-none" style="left: -5px; bottom: -5px; font-size: 2rem;">🔥</div>
+                        <div class="flames absolute z-10 pointer-events-none" style="right: -5px; bottom: -5px; font-size: 2rem; animation-delay: 0.1s;">🔥</div>
+                    </div>
+                </div>
+
+                <div id="battle-text" class="h-8 text-md font-bold text-royal-red mt-2">Toque para golpear!</div>
+            </section>
+
+            <!-- PAGE 9: O Sacrifício & Botão Fujão -->
+            <section id="page-9" class="page-section hidden flex-col h-full text-center pt-2 relative">
+                <h2 class="text-xl font-bold font-title text-royal-dark border-b border-royal-dark/30 pb-2 mb-2">O Desfecho</h2>
+                <img src="./img/descupa.jpeg" onerror="this.onerror=null; this.src='https://placehold.co/600x400/4a3018/fdf6e3?text=8.+O+Herói+Ferido'" alt="Guerreiro Ferido" class="story-img !h-[170px]" />
+                <p class="text-sm leading-snug mt-2 text-justify px-1 font-semibold text-royal-dark">
+                    A fera caiu, mas o guerreiro também. As lendas dizem que <span class="text-royal-red">a única magia capaz de curá-lo é você aceitar ir jantar com ele.</span>
+                </p>
+                <div class="w-full h-32 relative flex items-center justify-center gap-2 mt-auto pb-2" id="proposal-container">
+                    <button onclick="acceptDate()" id="yes-btn" class="w-1/2 btn-royal py-3 px-1 rounded font-bold text-xs z-20 shadow-xl">
+                        SIM, eu aceito! ❤️
+                    </button>
+                    <button id="no-btn" class="w-1/2 bg-[#e0c896] border-2 border-[#b48c36] text-royal-dark font-bold py-3 px-1 rounded text-xs transition-all z-30 shadow-md">
+                        Deixe-o perecer
+                    </button>
+                </div>
+                <div id="meme-text" class="absolute bottom-1 w-full text-center text-[10px] font-bold text-royal-red opacity-0 transition-opacity"></div>
+            </section>
+
+            <!-- PAGE 10: O DECRETO REAL -->
+            <section id="page-10" class="page-section hidden flex-col items-center justify-center h-full space-y-4">
+                <h2 class="text-2xl font-bold font-title text-royal-dark">A Magia Funcionou! ✨</h2>
+                
+                <div class="decree-card w-full mt-4">
+                    <h3 class="font-title font-bold text-royal-red text-lg border-b border-royal-gold/50 pb-2 mb-3">
+                        Decreto Real de Vitória
+                    </h3>
+                    <p class="text-xs italic text-royal-dark mb-3 leading-relaxed">
+                        Pela bravura demonstrada em campo de batalha, fica decretado que o Herói está salvo e terá a honra de cortejar a donzela em um banquete épico.
+                    </p>
+                    <p class="font-signature text-3xl text-royal-red my-4">Vitória & O Herói</p>
+                    <p class="text-[9px] text-royal-dark/60 uppercase font-bold tracking-widest">Válido por tempo indeterminado</p>
+                </div>
+
+                <p class="text-xs text-center text-royal-dark italic px-4 mt-2">
+                    Tire um print deste decreto oficial e envie para o herói! 📸
+                </p>
+
+                <button onclick="sendPigeon()" class="w-full bg-[#25D366] hover:bg-[#1ebd5a] text-white font-bold py-3 rounded text-md shadow-lg flex items-center justify-center gap-3">
+                    <i class="fa-brands fa-whatsapp text-xl"></i>
+                    Avisar o Herói
+                </button>
+            </section>
+
+        </div>
+    </main>
+
+    <script>
+        /* ==================================================================
+           CONTROLE DE ÁUDIO MÁGICO (GERADO NO CÓDIGO - TONE.JS)
+           ================================================================== */
+        let synth, swordSynth, currentLoop;
+        let dragonInterval; 
+        let currentSpeed = 1200; 
+
+        async function initAudio() {
+            if (synth) return; 
+            await Tone.start();
+            
+            synth = new Tone.PolySynth(Tone.Synth, {
+                oscillator: { type: "triangle" },
+                envelope: { attack: 0.05, decay: 0.2, sustain: 0.2, release: 1.2 }
+            }).toDestination();
+            
+            swordSynth = new Tone.MetalSynth({
+                frequency: 800, 
+                envelope: { attack: 0.001, decay: 0.1, release: 0.1 },
+                harmonicity: 4.1, modulationIndex: 20, resonance: 2000, octaves: 1.5
+            }).toDestination();
+        }
+
+        function playTheme(themeName) {
+            if (currentLoop) { 
+                Tone.Transport.stop(); 
+                currentLoop.dispose(); 
+            }
+            
+            if (themeName === 'calm') {
+                const notes = ["C4", "E4", "G4", "C5", "E5", "C5", "G4", "E4"];
+                let idx = 0;
+                currentLoop = new Tone.Loop(time => {
+                    synth.triggerAttackRelease(notes[idx], "8n", time, 0.4);
+                    idx = (idx + 1) % notes.length;
+                }, "4n").start(0);
+                Tone.Transport.bpm.value = 110;
+                Tone.Transport.start();
+                
+            } else if (themeName === 'battle') {
+                const notes = ["D2", "F2", "D2", "G2", "D2", "A2", "D2", "Bb2"];
+                let idx = 0;
+                currentLoop = new Tone.Loop(time => {
+                    synth.triggerAttackRelease(notes[idx], "16n", time, 0.6);
+                    idx = (idx + 1) % notes.length;
+                }, "8n").start(0);
+                Tone.Transport.bpm.value = 140;
+                Tone.Transport.start();
+                
+            } else if (themeName === 'celebration') {
+                const notes = [["C4", "E4", "G4"], ["F4", "A4", "C5"], ["G4", "B4", "D5"], ["C5", "E5", "G5"]];
+                let idx = 0;
+                currentLoop = new Tone.Loop(time => {
+                    synth.triggerAttackRelease(notes[idx], "4n", time, 0.4);
+                    idx = (idx + 1) % notes.length;
+                }, "2n").start(0);
+                Tone.Transport.bpm.value = 120;
+                Tone.Transport.start();
+            }
+        }
+
+        function playSwordSound() {
+            if (swordSynth) {
+                swordSynth.triggerAttackRelease("32n");
+            }
+        }
+
+        async function openBookAndStartAudio() {
+            await initAudio();
+            playTheme('calm');
+
+            document.getElementById('book-cover').style.display = 'none';
+            const pages = document.getElementById('book-pages');
+            pages.classList.remove('hidden');
+            document.getElementById('page-1').classList.remove('hidden');
+            document.getElementById('page-1').classList.add('flex', 'fade-in');
+        }
+
+        /* ==================================================================
+           NAVEGAÇÃO E PÁGINAS
+           ================================================================== */
+        let currentPage = 1;
+
+        function goToPage(pageNum) {
+            const currentEl = document.getElementById('page-' + currentPage);
+            const nextEl = document.getElementById('page-' + pageNum);
+            
+            if (currentEl) {
+                currentEl.classList.remove('flex', 'fade-in');
+                currentEl.classList.add('hidden');
+            }
+            if (nextEl) {
+                nextEl.classList.remove('hidden');
+                nextEl.classList.add('flex', 'fade-in');
+            }
+            
+            currentPage = pageNum;
+            updateBackground(pageNum);
+
+            if (pageNum === 6) playTheme('battle'); 
+            if (pageNum === 8) startDragonBattle();
+            if (pageNum === 10) playTheme('celebration'); 
+        }
+
+        function updateBackground(pageNum) {
+            const body = document.getElementById('app-body');
+            body.className = 'p-4'; 
+            if (pageNum <= 2) body.classList.add('bg-forest');
+            else if (pageNum >= 3 && pageNum <= 5) body.classList.add('bg-castle');
+            else if (pageNum >= 6 && pageNum <= 9) body.classList.add('bg-battle');
+            else if (pageNum === 10) body.classList.add('bg-celebration');
+        }
+
+        /* ==================================================================
+           EASTER EGGS
+           ================================================================== */
+        function triggerEasterEgg(type) {
+            if (type === 'rose') {
+                confetti({ particleCount: 50, spread: 60, origin: { y: 0.1 }, colors: ['#ef4444', '#991b1b'], shapes: ['circle'], gravity: 0.5, scalar: 0.8 });
+            }
+        }
+
+        /* ==================================================================
+           DRAGON MINIGAME
+           ================================================================== */
+        let dragonHP = 5;
+        let maxHP = 5;
+        let lastAttackTime = 0; 
+
+        function startDragonBattle() {
+            dragonHP = 5;
+            currentSpeed = 1200;
+            updateHPUI();
+            document.getElementById('battle-text').innerText = "Toque na arena para golpear!";
+            
+            const dragon = document.getElementById('dragon');
+            if (dragon) {
+                dragon.innerText = '🐉';
+                dragon.classList.add('on-fire');
+                dragon.style.filter = "none";
+                dragon.style.opacity = "1";
+                dragon.style.transition = "top 0.3s ease, left 0.3s ease"; 
+            }
+            
+            clearInterval(dragonInterval);
+            dragonInterval = setInterval(moveDragon, currentSpeed);
+            moveDragon();
+        }
+
+        function updateHPUI() {
+            const hpBar = document.getElementById('hp-bar');
+            const hpText = document.getElementById('hp-text');
+            const hpPercent = (dragonHP / maxHP) * 100;
+            
+            if (hpBar) hpBar.style.width = `${Math.max(0, hpPercent)}%`;
+            if (hpText) hpText.innerText = `Vida do Dragão: ${Math.max(0, dragonHP)}/${maxHP}`;
+        }
+
+        function moveDragon() {
+            if (dragonHP <= 0) return; 
+            const arena = document.getElementById('arena');
+            const dragon = document.getElementById('dragon');
+            if (!arena || !dragon) return;
+
+            const maxX = Math.max(10, arena.clientWidth - 70);
+            const maxY = Math.max(10, arena.clientHeight - 70);
+            
+            dragon.style.left = Math.floor(Math.random() * maxX) + 'px';
+            dragon.style.top = Math.floor(Math.random() * maxY) + 'px';
+        }
+
+        function executeAttack(e) {
+            if (e && e.type === 'touchstart' && e.cancelable) e.preventDefault();
+
+            const now = Date.now();
+            if (now - lastAttackTime < 150) return; 
+
+            const targetClicked = e.target.closest('#dragon');
+            if (!targetClicked) return;
+
+            lastAttackTime = now;
+
+            if (currentPage !== 8 || dragonHP <= 0) return;
+
+            dragonHP--;
+            updateHPUI();
+            playSwordSound(); 
+
+            const arena = document.getElementById('arena');
+            if (arena) {
+                const slash = document.createElement('div');
+                slash.innerText = '⚔️';
+                slash.className = 'slash-effect';
+                
+                let x = arena.clientWidth / 2;
+                let y = arena.clientHeight / 2;
+                
+                if (e) {
+                    const rect = arena.getBoundingClientRect();
+                    if (e.touches && e.touches.length > 0) {
+                        x = e.touches[0].clientX - rect.left;
+                        y = e.touches[0].clientY - rect.top;
+                    } else if (e.clientX !== undefined) {
+                        x = e.clientX - rect.left;
+                        y = e.clientY - rect.top;
+                    }
+                }
+
+                slash.style.left = (x - 20) + 'px';
+                slash.style.top = (y - 20) + 'px';
+                arena.appendChild(slash);
+                setTimeout(() => slash.remove(), 200);
+            }
+
+            if (dragonHP > 0) {
+                currentSpeed = Math.max(300, currentSpeed - 200);
+                clearInterval(dragonInterval);
+                dragonInterval = setInterval(moveDragon, currentSpeed);
+                moveDragon(); 
+            } else {
+                clearInterval(dragonInterval);
+                document.getElementById('battle-text').innerText = "Dragão Derrotado! ☠️";
+                const dragon = document.getElementById('dragon');
+                if (dragon) {
+                    dragon.innerText = "☠️";
+                    dragon.classList.remove('on-fire');
+                    dragon.style.filter = "grayscale(100%)";
+                    dragon.style.opacity = "0.4";
+                }
+                setTimeout(() => goToPage(9), 1500);
+            }
+        }
+
+        /* ==================================================================
+           BOTÃO FUJÃO E FINAL
+           ================================================================== */
+        const noBtn = document.getElementById('no-btn');
+        const container = document.getElementById('proposal-container');
+        const memeText = document.getElementById('meme-text');
+        const rejections = ["Você não tem escolha!", "A vida dele depende disso!", "Sem crueldade!", "Salva ele logo! ❤️", "Foi o destino!"];
+        let rejIndex = 0;
+
+        function runAway(e) {
+            if (e && e.preventDefault) e.preventDefault();
+            if (!container || !noBtn) return;
+            
+            const maxX = Math.max(10, container.clientWidth - noBtn.clientWidth - 10);
+            const maxY = Math.max(10, container.clientHeight - noBtn.clientHeight - 10);
+            
+            noBtn.style.position = 'absolute';
+            noBtn.style.left = `${Math.floor(Math.random() * maxX)}px`;
+            noBtn.style.top = `${Math.floor(Math.random() * maxY)}px`;
+
+            if (memeText) {
+                memeText.innerText = rejections[rejIndex % rejections.length];
+                memeText.style.opacity = '1';
+            }
+            rejIndex++;
+        }
+
+        if (noBtn) {
+            noBtn.addEventListener('mouseover', runAway);
+            noBtn.addEventListener('touchstart', runAway, { passive: false });
+            noBtn.addEventListener('click', runAway);
+        }
+
+        function acceptDate() {
+            goToPage(10);
+            if (typeof confetti !== 'undefined') {
+                confetti({ particleCount: 200, spread: 100, origin: { y: 0.6 }, colors: ['#b48c36', '#7f1d1d', '#fdf6e3'] });
+            }
+        }
+
+        function sendPigeon() {
+            const msg = `Oii! Hahaha adorei a história! O herói lutou bem, a magia funcionou e o Decreto Real garante o nosso jantar! ❤️🏰⚔️`;
+            window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
+        }
+    </script>
+</body>
+</html>
